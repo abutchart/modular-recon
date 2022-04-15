@@ -1,0 +1,5 @@
+*.log
+*.secret
+bug_bounty/
+EyeWitness/
+one_time/
