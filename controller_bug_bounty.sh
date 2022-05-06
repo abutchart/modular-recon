@@ -14,7 +14,7 @@ curl https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/master/data/
 # targets.txt -> list of targets to do all non-subdomain-related stuff with
 cat /dev/null > $DIR/wildcards.txt
 
-TLDS=(com net org de icu uk ru info top xyz tk cn ga cf nl ca us)
+TLDS=(net com org jp it br de cn fr au ru mx pl nl edu ar ca uk se tr in xyz)
 
 cat $DIR/raw_wildcards.txt | while read line; do
 	# some programs format wildcards like (*).example.com
