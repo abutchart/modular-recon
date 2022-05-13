@@ -1,14 +1,18 @@
 #!/bin/bash
-#TODO: Diff checking mechanism, Discord bot notification system
+#TODO: Diff checking mechanism
 
 DIR=bug_bounty
 DATE=$(date +%d-%m-%y)
 if [[ ! -d $DIR ]]; then mkdir $DIR; fi
 if [[ ! -d $DIR/data ]]; then mkdir $DIR/data; fi
 
+echo "DOWNLOADING TARGET LISTS"
+
 # pre-scraped bug bounty targets
 curl https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/master/data/domains.txt > $DIR/targets.txt
 curl https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/master/data/wildcards.txt > $DIR/raw_wildcards.txt
+
+python3 ./send_discord_message.py "DOWNLOADED TARGET LISTS\nENUMERATING TLDS"
 
 # wildcards.txt -> get subdomains, add all valid ones to targets
 # targets.txt -> list of targets to do all non-subdomain-related stuff with
@@ -30,6 +34,8 @@ cat $DIR/raw_wildcards.txt | while read line; do
 	fi
 done
 
+python3 ./send_discord_message.py "ENUMERATED TLDS\nFORMATTING WILDCARD DOMAINS"
+
 cat /dev/null > $DIR/formatted_wildcards_special_domains.txt
 cat /dev/null > $DIR/formatted_wildcards_special_mask.txt
 cat /dev/null > $DIR/formatted_wildcards.txt
@@ -45,7 +51,7 @@ cat $DIR/wildcards.txt | while read line; do
 			# get the domain
 			# api.*.example.com -> example.com
 			TMP=$(echo $line | awk -F '*.' '{print $NF}')
-			# remove stuff like example-*.com, not sure how to deal with this format
+			# remove stuff like example-*.com, not sure how to deal with this format yet
 			if [[ $TMP == *\.* ]]; then
 				echo $TMP >> $DIR/formatted_wildcards_special_domains.txt
 				echo $line >> $DIR/formatted_wildcards_special_mask.txt
@@ -65,8 +71,12 @@ cat $DIR/formatted_wildcards_special_domains.txt | sort | uniq > $DIR/tmp.txt
 cat $DIR/tmp.txt > $DIR/formatted_wildcards_special_domains.txt
 rm $DIR/tmp.txt
 
+python3 ./send_discord_message.py "FORMATTED WILDCARD DOMAINS\nENUMERATING SUBDOMAINS"
+
 ./enum_subs_passive_1.sh $DIR/formatted_wildcards.txt | tee -a $DIR/targets.txt
 ./enum_subs_passive_1.sh $DIR/formatted_wildcards_special_domains.txt | tee $DIR/subdomains_special.txt
+
+python3 ./send_discord_message.py "ENUMERATED SUBDOMAINS\nVALIDATING TARGETS"
 
 cat $DIR/formatted_wildcards_special_mask.txt | while read line; do
 	# "^$line$" matches only the mask and nothing else 
@@ -77,11 +87,25 @@ done
 shuf $DIR/validated_targets.txt > $DIR/validated_targets_shuffled.txt
 python3 remove_duplicate_ips.py $DIR/validated_targets_shuffled.txt | tee $DIR/validated_targets_no_duplicates.txt
 ./strip_protocol.sh $DIR/validated_targets_no_duplicates.txt | tee $DIR/validated_targets_no_protocol.txt
+
+python3 ./send_discord_message.py "VALIDATED TARGETS\nTAKING SCREENSHOTS"
+
 if [[ ! -d $DIR/screens ]]; then mkdir $DIR/screens; fi
 ./take_screenshots.sh $DIR/validated_targets_no_duplicates.txt $DIR/screens
+
+python3 ./send_discord_message.py "TOOK SCREENSHOTS\nSCANNING FOR VULNS"
+
 ./vuln_scan_1.sh $DIR/validated_targets_no_duplicates.txt | tee $DIR/vulns.txt
-./enum_files_1.sh $DIR/validated_targets_no_duplicates.txt | tee $DIR/files.txt
 grep -E "\[unknown\]|\[low\]|\[medium\]|\[high\]|\[critical\]" $DIR/vulns.txt > $DIR/important_vulns.txt
+
+python3 ./send_discord_message.py "SCANNED FOR VULNS"
+python3 ./send_discord_message.py "FOUND " $(wc -l < $DIR/important_vulns.txt) " VULNERABILITIES!"
+
+python3 ./send_discord_message.py "ENUMERATING FILES"
+
+./enum_files_1.sh $DIR/validated_targets_no_duplicates.txt | tee $DIR/files.txt
+
+python3 ./send_discord_message.py "ENUMERATED FILES"
 
 # get list of domains to group subdomains into. api.null.foo.example.com -> example.com
 cat $DIR/validated_targets_no_duplicates.txt | awk -F '.' '{print $(NF-1)"."$NF}' | sort | uniq > $DIR/domains.txt
@@ -112,3 +136,4 @@ cat $DIR/domains.txt | while read domain; do
 		cp $DIR/data/$domain/source/*$subdomain.txt $DIR/data/$domain/subdomains/$subdomain/$DATE
 	done
 done
+
