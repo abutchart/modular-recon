@@ -6,7 +6,7 @@ DATE=$(date +%d-%m-%y)
 if [[ ! -d $DIR ]]; then mkdir $DIR; fi
 if [[ ! -d $DIR/data ]]; then mkdir $DIR/data; fi
 
-echo "DOWNLOADING TARGET LISTS"
+python3 ./send_discord_message.py "DOWNLOADING TARGET LISTS"
 
 # pre-scraped bug bounty targets
 curl https://raw.githubusercontent.com/arkadiyt/bounty-targets-data/master/data/domains.txt > $DIR/targets.txt
