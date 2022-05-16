@@ -30,3 +30,13 @@ go install -v github.com/tomnomnom/httprobe@master
 go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
 ```
 
+## Usage
+Each module takes either standard input or a text file as input, and outputs to standard output. This can be piped into whatever you require.
+
+Modules starting with "controller" run other modules in a sequence to perform a task.
+
+`controller_bug_bounty.sh` downloads bug bounty data from [bounty-targets-data](https://github.com/arkadiyt/bounty-targets-data), formats it, enumerates subdomains, verifies these subdomains, takes screenshots, scans for vulnerabilities, and enumerates files.
+
+The other controllers perform roughly the same actions but get input in the format `controller.sh targets.txt target_dir`. The controller script will then go on to store all of its data in a directory with the name specified. "no_subs" means that the controller does not enumerate subdomains. "subs" means it does. A "heavy" controller will perform more thorough checks but will be slower and noiser than a "light" controller.
+
+Non-controller modules may have numbers. Like the distinction between "light" and "heavy", the higher the number, the more thorough (but slower and noiser) the script will be. 
