@@ -1,5 +1,6 @@
 # modular-recon
-A set of modular reconnaissance scripts to capture data on bug bounty target domains
+A set of modular reconnaissance scripts to capture data on bug bounty target domains.
+
 ![image](https://user-images.githubusercontent.com/54566106/168514419-d2a67d09-6ba7-42df-83d7-416ad18237ea.png)
 
 ## Installation
